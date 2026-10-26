@@ -4,8 +4,9 @@ export type FridgeStatus = 'healthy' | 'at_risk' | 'failed'
 export type Report = {
   id: string; facilityId: string; createdAt: string; outageHours: number
   battery: BatteryStatus; backup: BackupStatus; fridge: FridgeStatus
-  channel: 'web' | 'telegram'; note?: string
+  channel: 'web' | 'telegram'; note?: string; reporterId?: string
 }
+export type DemoUser = { id: string; displayName: string; role: string }
 export type Ticket = {
   id: string; facilityId: string; issue: string; owner: string; createdAt: string
   dueAt: string; status: 'open' | 'fixed_reported' | 'verified'; fixedAt?: string
@@ -19,7 +20,14 @@ export type Facility = {
   id: string; code: string; name: string; region: string; level: string
   peopleServed: number; hasFridge: boolean; hasMaternity: boolean
 }
-export type AppData = { facilities: Facility[]; reports: Report[]; tickets: Ticket[]; flex: FlexAction[] }
+export type AppData = { facilities: Facility[]; reports: Report[]; tickets: Ticket[]; flex: FlexAction[]; users: DemoUser[] }
+
+export const demoUsers: DemoUser[] = [
+  { id: 'user-01', displayName: 'Sample Reporter 01', role: 'Facility energy focal point' },
+  { id: 'user-02', displayName: 'Sample Reporter 02', role: 'Facility energy focal point' },
+  { id: 'user-03', displayName: 'Sample Coordinator', role: 'District energy coordinator' },
+  { id: 'user-telegram', displayName: 'Telegram demo bot', role: 'Automated demo channel' },
+]
 
 export const facilities: Facility[] = [
   { id: 'f-01', code: 'DEMO-01', name: 'Highland Health Centre', region: 'Amhara', level: 'Health centre', peopleServed: 8200, hasFridge: true, hasMaternity: true },
@@ -35,18 +43,19 @@ const ago = (days: number, hour = 9) => {
 }
 export const initialData: AppData = {
   facilities,
+  users: demoUsers,
   reports: [
-    { id: 'r-01', facilityId: 'f-01', createdAt: ago(0, 7), outageHours: 10, battery: 'low', backup: 'limited', fridge: 'at_risk', channel: 'telegram', note: 'Demo report' },
-    { id: 'r-02', facilityId: 'f-01', createdAt: ago(1), outageHours: 8, battery: 'low', backup: 'available', fridge: 'healthy', channel: 'web', note: 'Demo report' },
-    { id: 'r-03', facilityId: 'f-02', createdAt: ago(0, 8), outageHours: 2, battery: 'healthy', backup: 'available', fridge: 'healthy', channel: 'web', note: 'Demo report' },
-    { id: 'r-04', facilityId: 'f-03', createdAt: ago(0, 8), outageHours: 15, battery: 'failed', backup: 'unavailable', fridge: 'failed', channel: 'telegram', note: 'Demo report' },
-    { id: 'r-05', facilityId: 'f-03', createdAt: ago(1), outageHours: 11, battery: 'low', backup: 'limited', fridge: 'at_risk', channel: 'web', note: 'Demo report' },
-    { id: 'r-06', facilityId: 'f-04', createdAt: ago(0, 8), outageHours: 0, battery: 'healthy', backup: 'available', fridge: 'healthy', channel: 'web', note: 'Demo report' },
-    { id: 'r-07', facilityId: 'f-05', createdAt: ago(0, 8), outageHours: 5, battery: 'healthy', backup: 'available', fridge: 'healthy', channel: 'web', note: 'Demo report' },
-    { id: 'r-08', facilityId: 'f-06', createdAt: ago(0, 8), outageHours: 7, battery: 'low', backup: 'available', fridge: 'healthy', channel: 'telegram', note: 'Demo report' },
-    { id: 'r-09', facilityId: 'f-03', createdAt: ago(2, 8), outageHours: 14, battery: 'low', backup: 'limited', fridge: 'at_risk', channel: 'web', note: 'Demo report' },
-    { id: 'r-10', facilityId: 'f-06', createdAt: ago(2, 8), outageHours: 1, battery: 'healthy', backup: 'available', fridge: 'healthy', channel: 'web', note: 'Demo report after reported repair' },
-    { id: 'r-11', facilityId: 'f-06', createdAt: ago(1, 8), outageHours: 1, battery: 'healthy', backup: 'available', fridge: 'healthy', channel: 'web', note: 'Demo report after reported repair' },
+    { id: 'r-01', facilityId: 'f-01', createdAt: ago(0, 7), outageHours: 10, battery: 'low', backup: 'limited', fridge: 'at_risk', channel: 'telegram', note: 'Synthetic demo report', reporterId: 'user-telegram' },
+    { id: 'r-02', facilityId: 'f-01', createdAt: ago(1), outageHours: 8, battery: 'low', backup: 'available', fridge: 'healthy', channel: 'web', note: 'Synthetic demo report', reporterId: 'user-01' },
+    { id: 'r-03', facilityId: 'f-02', createdAt: ago(0, 8), outageHours: 2, battery: 'healthy', backup: 'available', fridge: 'healthy', channel: 'web', note: 'Synthetic demo report', reporterId: 'user-02' },
+    { id: 'r-04', facilityId: 'f-03', createdAt: ago(0, 8), outageHours: 15, battery: 'failed', backup: 'unavailable', fridge: 'failed', channel: 'telegram', note: 'Synthetic demo report', reporterId: 'user-telegram' },
+    { id: 'r-05', facilityId: 'f-03', createdAt: ago(1), outageHours: 11, battery: 'low', backup: 'limited', fridge: 'at_risk', channel: 'web', note: 'Synthetic demo report', reporterId: 'user-03' },
+    { id: 'r-06', facilityId: 'f-04', createdAt: ago(0, 8), outageHours: 0, battery: 'healthy', backup: 'available', fridge: 'healthy', channel: 'web', note: 'Synthetic demo report', reporterId: 'user-01' },
+    { id: 'r-07', facilityId: 'f-05', createdAt: ago(0, 8), outageHours: 5, battery: 'healthy', backup: 'available', fridge: 'healthy', channel: 'web', note: 'Synthetic demo report', reporterId: 'user-02' },
+    { id: 'r-08', facilityId: 'f-06', createdAt: ago(0, 8), outageHours: 7, battery: 'low', backup: 'available', fridge: 'healthy', channel: 'telegram', note: 'Synthetic demo report', reporterId: 'user-telegram' },
+    { id: 'r-09', facilityId: 'f-03', createdAt: ago(2, 8), outageHours: 14, battery: 'low', backup: 'limited', fridge: 'at_risk', channel: 'web', note: 'Synthetic demo report', reporterId: 'user-03' },
+    { id: 'r-10', facilityId: 'f-06', createdAt: ago(2, 8), outageHours: 1, battery: 'healthy', backup: 'available', fridge: 'healthy', channel: 'web', note: 'Synthetic report after reported repair', reporterId: 'user-02' },
+    { id: 'r-11', facilityId: 'f-06', createdAt: ago(1, 8), outageHours: 1, battery: 'healthy', backup: 'available', fridge: 'healthy', channel: 'web', note: 'Synthetic report after reported repair', reporterId: 'user-01' },
   ],
   tickets: [
     { id: 't-01', facilityId: 'f-03', issue: 'Battery failed; vaccine fridge at risk', owner: 'District energy officer', createdAt: ago(1), dueAt: ago(-2), status: 'open', healthyAfterFix: 0 },

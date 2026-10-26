@@ -1,15 +1,18 @@
 import { admin, allowed, facilityById, isHealthy, isSevere, newId, send, validText } from './_lib/db'
 
-const choices = { battery: ['healthy','low','failed'], backup: ['available','limited','unavailable'], fridge: ['healthy','at_risk','failed'] }
+const choices = { battery: ['healthy', 'low', 'failed'], backup: ['available', 'limited', 'unavailable'], fridge: ['healthy', 'at_risk', 'failed'] }
 export default async function handler(req: any, res: any) {
   if (!allowed(req, res)) return
   const b = req.body ?? {}
   const hours = Number(b.outageHours)
-  if (!Number.isFinite(hours) || hours < 0 || hours > 24 || !choices.battery.includes(b.battery) || !choices.backup.includes(b.backup) || !choices.fridge.includes(b.fridge) || (b.note && !validText(b.note, 180))) return send(res, 400, { error: 'Check the report fields and try again.' })
+  if (typeof b.reporterId !== 'string' || !/^user-0[1-3]$/.test(b.reporterId) || !Number.isFinite(hours) || hours < 0 || hours > 24 || !choices.battery.includes(b.battery) || !choices.backup.includes(b.backup) || !choices.fridge.includes(b.fridge) || (b.note && !validText(b.note, 180))) return send(res, 400, { error: 'Check the report fields and try again.' })
   try {
     const db = admin(); const f = await facilityById(db, b.facilityId)
     if (!f) return send(res, 400, { error: 'Unknown demo facility.' })
-    const report = { id: newId('r'), facility_id: f.id, outage_hours: hours, battery: b.battery, backup: b.backup, fridge: b.fridge, channel: 'web', note: typeof b.note === 'string' ? b.note.trim() || null : null }
+    const reporter = await db.from('demo_users').select('id').eq('id', b.reporterId).maybeSingle()
+    if (reporter.error) throw reporter.error
+    if (!reporter.data || reporter.data.id === 'user-telegram') return send(res, 400, { error: 'Choose a valid sample reporter.' })
+    const report = { id: newId('r'), facility_id: f.id, reporter_id: reporter.data.id, outage_hours: hours, battery: b.battery, backup: b.backup, fridge: b.fridge, channel: 'web', note: typeof b.note === 'string' ? b.note.trim() || null : null }
     const inserted = await db.from('reports').insert(report).select('*').single()
     if (inserted.error) throw inserted.error
     const { data: candidates, error: ticketErr } = await db.from('tickets').select('*').eq('facility_id', f.id).neq('status', 'verified')

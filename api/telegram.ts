@@ -50,16 +50,16 @@ async function onButton(query: any) {
   const facility = await admin().from('facilities').select('id,name').eq('id', facilityId).maybeSingle()
   if (facility.error) throw facility.error
   if (!facility.data) { await sendText(chat, 'That demo facility is no longer available. Start again with its DEMO code.'); return }
-  if (step === 'h' && parts.length === 3 && ['0','2','6','12','18'].includes(a)) {
+  if (step === 'h' && parts.length === 3 && ['0', '2', '6', '12', '18'].includes(a)) {
     await sendText(chat, '2 of 4 · Observed battery status?', keyboard([[{ text: 'Healthy', callback_data: `b|${facilityId}|${a}|healthy` }, { text: 'Low', callback_data: `b|${facilityId}|${a}|low` }, { text: 'Failed', callback_data: `b|${facilityId}|${a}|failed` }]])); return
   }
-  if (step === 'b' && parts.length === 4 && ['healthy','low','failed'].includes(b)) {
+  if (step === 'b' && parts.length === 4 && ['healthy', 'low', 'failed'].includes(b)) {
     await sendText(chat, '3 of 4 · Backup supply status?', keyboard([[{ text: 'Available', callback_data: `u|${facilityId}|${a}|${b}|available` }, { text: 'Limited', callback_data: `u|${facilityId}|${a}|${b}|limited` }, { text: 'Unavailable', callback_data: `u|${facilityId}|${a}|${b}|unavailable` }]])); return
   }
-  if (step === 'u' && parts.length === 5 && ['healthy','low','failed'].includes(b) && ['available','limited','unavailable'].includes(c)) {
+  if (step === 'u' && parts.length === 5 && ['healthy', 'low', 'failed'].includes(b) && ['available', 'limited', 'unavailable'].includes(c)) {
     await sendText(chat, '4 of 4 · Vaccine refrigerator observation?', keyboard([[{ text: 'Healthy', callback_data: `r|${facilityId}|${a}|${b}|${c}|healthy` }, { text: 'At risk', callback_data: `r|${facilityId}|${a}|${b}|${c}|at_risk` }, { text: 'Failed', callback_data: `r|${facilityId}|${a}|${b}|${c}|failed` }]])); return
   }
-  if (step === 'r' && parts.length === 6 && ['healthy','low','failed'].includes(b) && ['available','limited','unavailable'].includes(c) && ['healthy','at_risk','failed'].includes(parts[5])) {
+  if (step === 'r' && parts.length === 6 && ['healthy', 'low', 'failed'].includes(b) && ['available', 'limited', 'unavailable'].includes(c) && ['healthy', 'at_risk', 'failed'].includes(parts[5])) {
     const hours = Number(a)
     if (!Number.isFinite(hours) || hours < 0 || hours > 24) return
     await saveReport(chat, facility.data, hours, b, c, parts[5]); return
@@ -69,7 +69,7 @@ async function onButton(query: any) {
 
 async function saveReport(chat: number, facility: { id: string; name: string }, outageHours: number, battery: string, backup: string, fridge: string) {
   const db = admin()
-  const inserted = await db.from('reports').insert({ id: newId('r'), facility_id: facility.id, outage_hours: outageHours, battery, backup, fridge, channel: 'telegram', note: 'Telegram check-in · observation' }).select('*').single()
+  const inserted = await db.from('reports').insert({ id: newId('r'), facility_id: facility.id, reporter_id: 'user-telegram', outage_hours: outageHours, battery, backup, fridge, channel: 'telegram', note: 'Telegram check-in · observation' }).select('*').single()
   if (inserted.error) throw inserted.error
   const { data: tickets, error } = await db.from('tickets').select('*').eq('facility_id', facility.id).neq('status', 'verified')
   if (error) throw error
