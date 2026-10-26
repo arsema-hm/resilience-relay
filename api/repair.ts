@@ -1,6 +1,7 @@
-import { admin, allowed, newId, send } from './_lib/db'
+import { admin, allowed, newId, rateLimited, send } from './_lib/db'
 export default async function handler(req: any, res: any) {
   if (!allowed(req, res)) return
+  if (!await rateLimited(req, res)) return
   const id = req.body?.ticketId
   if (typeof id !== 'string' || id.length > 120) return send(res, 400, { error: 'Invalid ticket.' })
   try {

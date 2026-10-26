@@ -1,6 +1,7 @@
-import { admin, allowed, facilityById, newId, send } from './_lib/db'
+import { admin, allowed, facilityById, newId, rateLimited, send } from './_lib/db'
 export default async function handler(req: any, res: any) {
   if (!allowed(req, res)) return
+  if (!await rateLimited(req, res)) return
   const b = req.body ?? {}
   const allowedActivities = ['Water pumping','Laundry','Device charging','Other staff-confirmed task']
   const allowedLoads = ['Vaccine refrigerator','Essential lighting','Communications equipment','Other essential load']

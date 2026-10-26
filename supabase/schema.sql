@@ -7,6 +7,12 @@ create table if not exists public.facilities (
   level text not null, people_served integer not null default 0,
   has_fridge boolean not null default true, has_maternity boolean not null default false
 );
+alter table public.facilities add column if not exists remote boolean not null default false;
+alter table public.facilities add column if not exists battery_kwh numeric check (battery_kwh is null or battery_kwh >= 0);
+alter table public.facilities add column if not exists usable_fraction numeric check (usable_fraction is null or usable_fraction between 0 and 1);
+alter table public.facilities add column if not exists inverter_efficiency numeric check (inverter_efficiency is null or inverter_efficiency between 0 and 1);
+alter table public.facilities add column if not exists critical_load_kw numeric check (critical_load_kw is null or critical_load_kw > 0);
+alter table public.facilities add column if not exists fridge_holdover_hours numeric check (fridge_holdover_hours is null or fridge_holdover_hours >= 0);
 create table if not exists public.demo_users (
   id text primary key, display_name text not null, role text not null
 );
@@ -20,6 +26,11 @@ create table if not exists public.reports (
   channel text not null check (channel in ('web','telegram')), note text
 );
 alter table public.reports add column if not exists reporter_id text references public.demo_users(id);
+alter table public.reports add column if not exists outage_count integer not null default 0 check (outage_count between 0 and 50);
+alter table public.reports add column if not exists longest_outage_hours numeric not null default 0 check (longest_outage_hours between 0 and 24);
+alter table public.reports add column if not exists outage_window text not null default 'unknown' check (outage_window in ('morning','afternoon','evening','night','unknown'));
+alter table public.reports add column if not exists generator_hours numeric not null default 0 check (generator_hours between 0 and 24);
+alter table public.reports add column if not exists local_season text not null default 'unknown' check (local_season in ('rainy','dry','other','unknown'));
 create table if not exists public.tickets (
   id text primary key, facility_id text not null references public.facilities(id), issue text not null,
   owner text not null default 'District energy officer', created_at timestamptz not null default now(),
@@ -34,6 +45,30 @@ create table if not exists public.flex_actions (
   created_at timestamptz not null default now(), activity text not null,
   protected_load text not null, completed boolean not null default false, note text
 );
+
+-- Public demo write throttling. Only a hash of the client address is retained.
+create table if not exists public.demo_write_limits (
+  client_hash text primary key, window_started_at timestamptz not null, write_count integer not null
+);
+alter table public.demo_write_limits enable row level security;
+revoke all on public.demo_write_limits from anon, authenticated;
+create or replace function public.consume_demo_write_limit(p_client_hash text, p_limit integer default 20, p_window_seconds integer default 3600)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare current_row public.demo_write_limits%rowtype;
+begin
+  perform pg_advisory_xact_lock(hashtext(p_client_hash));
+  select * into current_row from public.demo_write_limits where client_hash = p_client_hash for update;
+  if not found or current_row.window_started_at < now() - make_interval(secs => p_window_seconds) then
+    insert into public.demo_write_limits(client_hash, window_started_at, write_count) values(p_client_hash, now(), 1)
+      on conflict(client_hash) do update set window_started_at = now(), write_count = 1;
+    return true;
+  end if;
+  if current_row.write_count >= p_limit then return false; end if;
+  update public.demo_write_limits set write_count = write_count + 1 where client_hash = p_client_hash;
+  return true;
+end $$;
+revoke all on function public.consume_demo_write_limit(text, integer, integer) from public, anon, authenticated;
+grant execute on function public.consume_demo_write_limit(text, integer, integer) to service_role;
 
 alter table public.facilities enable row level security;
 alter table public.demo_users enable row level security;
@@ -54,14 +89,15 @@ drop policy if exists "public demo read flex actions" on public.flex_actions;
 create policy "public demo read flex actions" on public.flex_actions for select to anon, authenticated using (true);
 -- Writes use the server-only service role after request validation. Anonymous browser writes are denied.
 
-insert into public.facilities (id,code,name,region,level,people_served,has_fridge,has_maternity) values
- ('f-01','DEMO-01','Highland Health Centre','Amhara','Health centre',8200,true,true),
- ('f-02','DEMO-02','Riverbend Health Post','Oromia','Health post',3100,true,false),
- ('f-03','DEMO-03','Lakeview Health Centre','Sidama','Health centre',6400,true,true),
- ('f-04','DEMO-04','Sunrise Primary Clinic','Oromia','Health post',2700,false,false),
- ('f-05','DEMO-05','Mountain Gate Hospital','Amhara','Hospital',14600,true,true),
- ('f-06','DEMO-06','Green Valley Health Centre','Sidama','Health centre',5100,true,false)
-on conflict (id) do nothing;
+insert into public.facilities (id,code,name,region,level,people_served,has_fridge,has_maternity,remote,battery_kwh,usable_fraction,inverter_efficiency,critical_load_kw) values
+ ('f-01','DEMO-01','Highland Health Centre','Amhara','Health centre',8200,true,true,true,10,.8,.9,1.2),
+ ('f-02','DEMO-02','Riverbend Health Post','Oromia','Health post',3100,true,false,false,6,.8,.9,.8),
+ ('f-03','DEMO-03','Lakeview Health Centre','Sidama','Health centre',6400,true,true,true,8,.75,.88,1.4),
+ ('f-04','DEMO-04','Sunrise Primary Clinic','Oromia','Health post',2700,false,false,false,4,.8,.9,.6),
+ ('f-05','DEMO-05','Mountain Gate Hospital','Amhara','Hospital',14600,true,true,false,16,.8,.9,2.2),
+ ('f-06','DEMO-06','Green Valley Health Centre','Sidama','Health centre',5100,true,false,false,7,.8,.9,1)
+on conflict (id) do update set remote=excluded.remote, battery_kwh=excluded.battery_kwh,
+ usable_fraction=excluded.usable_fraction, inverter_efficiency=excluded.inverter_efficiency, critical_load_kw=excluded.critical_load_kw;
 
 insert into public.demo_users (id,display_name,role) values
  ('user-01','Sample Reporter 01','Facility energy focal point'),
@@ -84,6 +120,15 @@ insert into public.reports (id,facility_id,reporter_id,created_at,outage_hours,b
  ('r-11','f-06','user-01',now()-interval '1 day',1,'healthy','available','healthy','web','SYNTHETIC DEMO DATA · after reported repair')
 on conflict (id) do update set reporter_id=excluded.reporter_id
 where public.reports.reporter_id is null;
+
+update public.reports set
+ outage_count = case when outage_hours > 0 then 1 else 0 end,
+ longest_outage_hours = outage_hours,
+ outage_window = case id when 'r-01' then 'morning' when 'r-02' then 'evening' when 'r-03' then 'afternoon'
+   when 'r-04' then 'night' when 'r-05' then 'unknown' when 'r-06' then 'morning' when 'r-07' then 'afternoon'
+   when 'r-08' then 'evening' when 'r-09' then 'night' when 'r-10' then 'unknown' when 'r-11' then 'morning' else 'unknown' end,
+ generator_hours = case when backup='available' then least(2, outage_hours * .2) else 0 end
+where id in ('r-01','r-02','r-03','r-04','r-05','r-06','r-07','r-08','r-09','r-10','r-11');
 
 insert into public.tickets (id,facility_id,issue,created_at,due_at,status,healthy_after_fix) values
  ('t-01','f-03','Battery failed; vaccine fridge at risk',now()-interval '1 day',now()+interval '2 days','open',0),

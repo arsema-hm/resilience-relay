@@ -1,18 +1,20 @@
-import { admin, allowed, facilityById, isHealthy, isSevere, newId, send, validText } from './_lib/db'
+import { admin, allowed, facilityById, isHealthy, isSevere, newId, rateLimited, send, validText } from './_lib/db'
 
 const choices = { battery: ['healthy', 'low', 'failed'], backup: ['available', 'limited', 'unavailable'], fridge: ['healthy', 'at_risk', 'failed'] }
 export default async function handler(req: any, res: any) {
   if (!allowed(req, res)) return
+  if (!await rateLimited(req, res)) return
   const b = req.body ?? {}
   const hours = Number(b.outageHours)
-  if (typeof b.reporterId !== 'string' || !/^user-0[1-3]$/.test(b.reporterId) || !Number.isFinite(hours) || hours < 0 || hours > 24 || !choices.battery.includes(b.battery) || !choices.backup.includes(b.backup) || !choices.fridge.includes(b.fridge) || (b.note && !validText(b.note, 180))) return send(res, 400, { error: 'Check the report fields and try again.' })
+  const count = Number(b.outageCount ?? (hours > 0 ? 1 : 0)); const longest = Number(b.longestOutageHours ?? hours); const generator = Number(b.generatorHours ?? 0)
+  if (typeof b.reporterId !== 'string' || !/^user-0[1-3]$/.test(b.reporterId) || !Number.isFinite(hours) || hours < 0 || hours > 24 || !Number.isInteger(count) || count < 0 || count > 50 || !Number.isFinite(longest) || longest < 0 || longest > hours || (count > 0 && longest < hours / count) || !Number.isFinite(generator) || generator < 0 || generator > 24 || (hours > 0 && count === 0) || (hours === 0 && count > 0) || !['morning','afternoon','evening','night','unknown'].includes(b.outageWindow ?? 'unknown') || !['rainy','dry','other','unknown'].includes(b.localSeason ?? 'unknown') || !choices.battery.includes(b.battery) || !choices.backup.includes(b.backup) || !choices.fridge.includes(b.fridge) || (b.note && !validText(b.note, 180))) return send(res, 400, { error: 'Check the report fields and try again.' })
   try {
     const db = admin(); const f = await facilityById(db, b.facilityId)
     if (!f) return send(res, 400, { error: 'Unknown demo facility.' })
     const reporter = await db.from('demo_users').select('id').eq('id', b.reporterId).maybeSingle()
     if (reporter.error) throw reporter.error
     if (!reporter.data || reporter.data.id === 'user-telegram') return send(res, 400, { error: 'Choose a valid sample reporter.' })
-    const report = { id: newId('r'), facility_id: f.id, reporter_id: reporter.data.id, outage_hours: hours, battery: b.battery, backup: b.backup, fridge: b.fridge, channel: 'web', note: typeof b.note === 'string' ? b.note.trim() || null : null }
+    const report = { id: newId('r'), facility_id: f.id, reporter_id: reporter.data.id, outage_hours: hours, outage_count: count, longest_outage_hours: longest, outage_window: b.outageWindow ?? 'unknown', generator_hours: generator, local_season: b.localSeason ?? 'unknown', battery: b.battery, backup: b.backup, fridge: b.fridge, channel: 'web', note: typeof b.note === 'string' ? b.note.trim() || null : null }
     const inserted = await db.from('reports').insert(report).select('*').single()
     if (inserted.error) throw inserted.error
     const { data: candidates, error: ticketErr } = await db.from('tickets').select('*').eq('facility_id', f.id).neq('status', 'verified')

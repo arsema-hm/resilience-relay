@@ -1,8 +1,8 @@
 import { admin, send } from './_lib/db'
 
-const facility = (x: any) => ({ id: x.id, code: x.code, name: x.name, region: x.region, level: x.level, peopleServed: x.people_served, hasFridge: x.has_fridge, hasMaternity: x.has_maternity })
+const facility = (x: any) => ({ id: x.id, code: x.code, name: x.name, region: x.region, level: x.level, peopleServed: x.people_served, hasFridge: x.has_fridge, hasMaternity: x.has_maternity, remote: x.remote ?? false, batteryKwh: x.battery_kwh ?? undefined, usableFraction: x.usable_fraction ?? undefined, inverterEfficiency: x.inverter_efficiency ?? undefined, criticalLoadKw: x.critical_load_kw ?? undefined, fridgeHoldoverHours: x.fridge_holdover_hours ?? undefined })
 const user = (x: any) => ({ id: x.id, displayName: x.display_name, role: x.role })
-const report = (x: any) => ({ id: x.id, facilityId: x.facility_id, reporterId: x.reporter_id ?? undefined, createdAt: x.created_at, outageHours: Number(x.outage_hours), battery: x.battery, backup: x.backup, fridge: x.fridge, channel: x.channel, note: x.note ?? undefined })
+const report = (x: any) => ({ id: x.id, facilityId: x.facility_id, reporterId: x.reporter_id ?? undefined, createdAt: x.created_at, outageHours: Number(x.outage_hours), outageCount: x.outage_count ?? undefined, longestOutageHours: x.longest_outage_hours ?? undefined, outageWindow: x.outage_window ?? 'unknown', generatorHours: Number(x.generator_hours ?? 0), localSeason: x.local_season ?? 'unknown', battery: x.battery, backup: x.backup, fridge: x.fridge, channel: x.channel, note: x.note ?? undefined })
 const ticket = (x: any) => ({ id: x.id, facilityId: x.facility_id, issue: x.issue, owner: x.owner, createdAt: x.created_at, dueAt: x.due_at, status: x.status, fixedAt: x.fixed_at ?? undefined, verifiedAt: x.verified_at ?? undefined, healthyAfterFix: x.healthy_after_fix })
 const flex = (x: any) => ({ id: x.id, facilityId: x.facility_id, createdAt: x.created_at, activity: x.activity, protectedLoad: x.protected_load, completed: x.completed, note: x.note ?? undefined })
 export default async function handler(_req: any, res: any) {
