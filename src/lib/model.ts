@@ -5,12 +5,16 @@ export type Report = {
   id: string; facilityId: string; createdAt: string; outageHours: number
   battery: BatteryStatus; backup: BackupStatus; fridge: FridgeStatus
   channel: 'web' | 'telegram'; note?: string; reporterId?: string
+  outageCount?: number; longestOutageHours?: number; outageWindow?: OutageWindow; generatorHours?: number
+  localSeason?: 'rainy' | 'dry' | 'other' | 'unknown'
 }
+export type OutageWindow = 'morning' | 'afternoon' | 'evening' | 'night' | 'unknown'
 export type DemoUser = { id: string; displayName: string; role: string }
 export type Ticket = {
   id: string; facilityId: string; issue: string; owner: string; createdAt: string
   dueAt: string; status: 'open' | 'fixed_reported' | 'verified'; fixedAt?: string
   verifiedAt?: string; healthyAfterFix: number
+  equipmentId?: string
 }
 export type FlexAction = {
   id: string; facilityId: string; createdAt: string; activity: string
@@ -19,6 +23,8 @@ export type FlexAction = {
 export type Facility = {
   id: string; code: string; name: string; region: string; level: string
   peopleServed: number; hasFridge: boolean; hasMaternity: boolean
+  remote?: boolean; batteryKwh?: number; usableFraction?: number; inverterEfficiency?: number
+  criticalLoadKw?: number; fridgeHoldoverHours?: number
 }
 export type AppData = { facilities: Facility[]; reports: Report[]; tickets: Ticket[]; flex: FlexAction[]; users: DemoUser[] }
 
@@ -30,12 +36,12 @@ export const demoUsers: DemoUser[] = [
 ]
 
 export const facilities: Facility[] = [
-  { id: 'f-01', code: 'DEMO-01', name: 'Highland Health Centre', region: 'Amhara', level: 'Health centre', peopleServed: 8200, hasFridge: true, hasMaternity: true },
-  { id: 'f-02', code: 'DEMO-02', name: 'Riverbend Health Post', region: 'Oromia', level: 'Health post', peopleServed: 3100, hasFridge: true, hasMaternity: false },
-  { id: 'f-03', code: 'DEMO-03', name: 'Lakeview Health Centre', region: 'Sidama', level: 'Health centre', peopleServed: 6400, hasFridge: true, hasMaternity: true },
-  { id: 'f-04', code: 'DEMO-04', name: 'Sunrise Primary Clinic', region: 'Oromia', level: 'Health post', peopleServed: 2700, hasFridge: false, hasMaternity: false },
-  { id: 'f-05', code: 'DEMO-05', name: 'Mountain Gate Hospital', region: 'Amhara', level: 'Hospital', peopleServed: 14600, hasFridge: true, hasMaternity: true },
-  { id: 'f-06', code: 'DEMO-06', name: 'Green Valley Health Centre', region: 'Sidama', level: 'Health centre', peopleServed: 5100, hasFridge: true, hasMaternity: false },
+  { id: 'f-01', code: 'DEMO-01', name: 'Highland Health Centre', region: 'Amhara', level: 'Health centre', peopleServed: 8200, hasFridge: true, hasMaternity: true, remote: true, batteryKwh: 10, usableFraction: .8, inverterEfficiency: .9, criticalLoadKw: 1.2 },
+  { id: 'f-02', code: 'DEMO-02', name: 'Riverbend Health Post', region: 'Oromia', level: 'Health post', peopleServed: 3100, hasFridge: true, hasMaternity: false, batteryKwh: 6, usableFraction: .8, inverterEfficiency: .9, criticalLoadKw: .8 },
+  { id: 'f-03', code: 'DEMO-03', name: 'Lakeview Health Centre', region: 'Sidama', level: 'Health centre', peopleServed: 6400, hasFridge: true, hasMaternity: true, remote: true, batteryKwh: 8, usableFraction: .75, inverterEfficiency: .88, criticalLoadKw: 1.4 },
+  { id: 'f-04', code: 'DEMO-04', name: 'Sunrise Primary Clinic', region: 'Oromia', level: 'Health post', peopleServed: 2700, hasFridge: false, hasMaternity: false, batteryKwh: 4, usableFraction: .8, inverterEfficiency: .9, criticalLoadKw: .6 },
+  { id: 'f-05', code: 'DEMO-05', name: 'Mountain Gate Hospital', region: 'Amhara', level: 'Hospital', peopleServed: 14600, hasFridge: true, hasMaternity: true, batteryKwh: 16, usableFraction: .8, inverterEfficiency: .9, criticalLoadKw: 2.2 },
+  { id: 'f-06', code: 'DEMO-06', name: 'Green Valley Health Centre', region: 'Sidama', level: 'Health centre', peopleServed: 5100, hasFridge: true, hasMaternity: false, batteryKwh: 7, usableFraction: .8, inverterEfficiency: .9, criticalLoadKw: 1 },
 ]
 
 const ago = (days: number, hour = 9) => {
@@ -68,6 +74,17 @@ export const initialData: AppData = {
   ],
 }
 
+// Explicitly synthetic fixture attributes so the prototype screens can be explored end-to-end.
+const demoWindows: OutageWindow[] = ['morning','evening','afternoon','night','unknown','morning','afternoon','evening','night','unknown','morning']
+initialData.reports = initialData.reports.map((report, index) => ({
+  ...report,
+  outageCount: report.outageHours > 0 ? (report.outageHours >= 12 ? 2 : 1) : 0,
+  longestOutageHours: report.outageHours > 0 ? report.outageHours / (report.outageHours >= 12 ? 2 : 1) : 0,
+  outageWindow: demoWindows[index] ?? 'unknown',
+  generatorHours: report.backup === 'available' ? Math.min(2, report.outageHours * .2) : 0,
+  localSeason: 'unknown',
+}))
+
 export function severity(report: Report) {
   return report.battery === 'failed' || report.fridge === 'failed' || report.outageHours >= 12 || report.backup === 'unavailable'
 }
@@ -86,7 +103,7 @@ export function riskScore(facility: Facility, reports: Report[], tickets: Ticket
   const storage = Math.max(battery, backup) * 20
   const open = tickets.filter(t => t.status !== 'verified')
   const oldestDays = open.length ? Math.max(...open.map(t => Math.max(0, (now - Date.parse(t.createdAt)) / 86400000))) : 0
-  const ticketAge = Math.min(oldestDays / 7, 1) * 15
+  const ticketAge = Math.min(15, Math.min(oldestDays / 7, 1) * 11 + (facility.remote ? 4 : 0))
   const failureCount = reports.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 30).filter(severity).length
   const repeat = Math.min(failureCount / 5, 1) * 10
   return { total: Math.round(outage + critical + storage + ticketAge + repeat), parts: { outage: Math.round(outage), critical: Math.round(critical), storage: Math.round(storage), ticketAge: Math.round(ticketAge), repeat: Math.round(repeat) }, avgOutage: Math.round(avgOutage * 10) / 10 }
