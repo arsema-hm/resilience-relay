@@ -6,7 +6,7 @@ Resilience Relay is a prototype for documenting electricity interruptions, obser
 
 ## Local start
 
-Install Node.js LTS and Git, then in PowerShell:
+Install Node.js LTS and Git, then open the project folder in VS Code. In **Terminal → New Terminal**, run:
 
 ```powershell
 cd path\to\resilience-relay
@@ -14,7 +14,7 @@ npm install
 npm run dev
 ```
 
-Open the local URL printed by Vite. In local demo mode, check-ins, repair actions, and flexibility logs are kept in `localStorage` on that browser. Use **Reset demo** in the left navigation or footer to restore the sample records.
+Open the local URL printed by Vite. In local demo mode, check-ins, repair actions, and flexibility logs are kept in `localStorage` on that browser. Use **Reset demo** in the left navigation, account menu, or footer to restore the sample records. The workspace menu lists the fictional sample users; the check-in form lets you select one as the reporter. These are demo identities, not authenticated user accounts.
 
 Useful commands:
 
@@ -32,6 +32,7 @@ npm run preview
 4. Two later reports must meet the prototype healthy rule (grid outage at most 2 hours, battery healthy, backup available, refrigerator healthy). The first increments the evidence count; the second verifies the repair. An unhealthy report resets the count.
 5. In **Flexibility log**, add a staff-confirmed entry, such as rescheduling water pumping while protecting the vaccine refrigerator. This only records the reported action; it never recommends changing clinical equipment use.
 6. Export the facility summary as CSV.
+7. Use the workspace selector to return to all facilities, the notification bell to open the maintenance queue, and the account menu to review demo access or reset sample data. The time-range filter updates overview and report-history summaries.
 
 The maintenance view also shows a synthetic verified-repair share, average time from ticket creation to verification, and count of facilities with repeat severe reports. These are prototype workflow indicators, not proof of improved power reliability.
 
@@ -44,7 +45,7 @@ The API routes in `api/` are for a synthetic-data demonstration. They are not a 
 ### Supabase
 
 1. Create a Supabase project.
-2. In its SQL Editor, run `supabase/schema.sql` once. This seeds fictional demo data and gives anonymous browser roles read-only access; direct browser writes are revoked. Writes go through server functions using a server-only service-role key.
+2. In its SQL Editor, run `supabase/schema.sql`. It seeds fictional facilities, reports, and sample reporter identities, and gives anonymous browser roles read-only access; direct browser writes are revoked. Writes go through server functions using a server-only service-role key.
 3. Copy the project URL and service-role key into the hosting provider's server environment variables. Never use a `VITE_` prefix for the service-role key.
 
 ### Vercel
