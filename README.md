@@ -132,22 +132,14 @@ You need a deployed app with the Vercel API routes, a Supabase database initiali
    Keep `SUPABASE_SERVICE_ROLE_KEY` and both Telegram values server-side. Never add a `VITE_` prefix, commit them, or send them in a screenshot or chat.
 5. Redeploy so the server functions receive the new environment variables.
 6. On your computer, create a private `.env.local` in the project folder. Copy the variable names from `.env.example`, then fill in the bot token, the **same** webhook secret, and `APP_URL` with the deployed HTTPS URL. Do not include quotation marks unless they are part of the value. `.env.local` is ignored by Git.
-7. In VS Code’s terminal, install Vercel CLI if needed and authenticate:
-
-   ```powershell
-   npm install --global vercel
-   vercel login
-   ```
-
-8. From the project directory, link this folder to the Vercel project if it is not already linked, then configure the local environment by pulling Vercel settings if you prefer. Ensure `.env.local` has the private Telegram values before continuing.
-9. Set the webhook using the helper script:
+7. In VS Code’s terminal, from the project directory, set the webhook using Node.js:
 
    ```powershell
    node --env-file=.env.local scripts/set-webhook.mjs
    ```
 
    The script sends the token directly from your terminal to Telegram’s `setWebhook` API and prints a success message. Never paste a tokenized Telegram API URL into a browser.
-10. Open your bot in Telegram, send `/start`, enter `DEMO-01`, and complete all five selections. Confirm that the resulting Telegram report appears in the hosted dashboard.
+8. Open your bot in Telegram, send `/start`, enter `DEMO-01`, and complete all five selections. Confirm that the resulting Telegram report appears in the hosted dashboard.
 
 If webhook setup fails, check that `APP_URL` is the deployed HTTPS origin, the API deployment is current, the two Telegram environment values match, and `/api/telegram` is reachable. If updates reach the bot but do not appear in the dashboard, check the Vercel function logs and Supabase schema setup. Do not share secrets when asking for help.
 
