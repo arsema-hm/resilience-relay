@@ -4,7 +4,7 @@
 
 This is a demonstration tool for exploring how staff-reported service interruptions, backup resources, maintenance follow-up and non-clinical flexible demand might fit together. It is not a monitoring system, grid model, clinical decision aid, or validated investment tool. The bundled facilities and observations are synthetic.
 
-IRENA's [2026 flexibility assessment](https://www.irena.org/Publications/2026/Jan/Flexibility-for-a-secure-and-affordable-power-sector-transformation) assesses daily, weekly and monthly system flexibility. Resilience Relay groups submitted observations into short, weekly and monthly reporting windows to expose the data; it does not calculate system-wide flexibility requirements or model the grid.
+Resilience Relay groups submitted observations into daily, weekly and monthly reporting windows to expose the available data; it does not calculate system-wide flexibility requirements or model the grid.
 
 ## Reliability indicators
 
@@ -46,7 +46,6 @@ Fridge holdover is blank unless entered from the exact appliance's manufacturer 
 
 ## References
 
-- IRENA (2026), [Flexibility for a secure and affordable power sector transformation](https://www.irena.org/Publications/2026/Jan/Flexibility-for-a-secure-and-affordable-power-sector-transformation).
 - IEEE SA, [IEEE 1366-2022 Guide for Electric Power Distribution Reliability Indices](https://standards.ieee.org/ieee/1366/7243/); the current project page for P1366 identifies distribution systems, substations, circuits and defined regions as intended applications.
 - WHO, [Electricity in health-care facilities: unreliable electricity supply indicator](https://www.who.int/data/gho/data/indicators/indicator-details/GHO/electrification-of-health-care-facilities--percentage-of-health-care-facilities-with-unreliable-electricity%28-%29).
 - WHO PQS, [E003 refrigerators and freezers product catalogue](https://extranet.who.int/prequal/immunization-devices/imd-listing-products-e003).

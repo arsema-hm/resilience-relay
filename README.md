@@ -6,8 +6,6 @@
 
 ### Community observations for more resilient clean-energy services
 
-**IRENA Youth Forum 2027 · Youth Energising the Future: Grids, Storage and Flexibility**
-
 [![Build](https://img.shields.io/badge/build-Vite%20%2B%20TypeScript-477b57)](#run-checks)
 [![Tests](https://img.shields.io/badge/tests-98%20passing-477b57)](#run-checks)
 [![Mode](https://img.shields.io/badge/mode-synthetic%20demo-f0b74b)](#scope-and-safety)
