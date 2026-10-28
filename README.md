@@ -1,101 +1,216 @@
+<div align="center">
+
+<img src="public/resilience-relay-mark.svg" alt="Resilience Relay symbol" width="84" height="84" />
+
 # Resilience Relay
 
-Resilience Relay is a prototype for documenting electricity interruptions, observed backup-system status, maintenance follow-up, and staff-confirmed flexibility actions at health facilities. It connects the IRENA Youth Forum 2027 theme areas of grids, storage, and flexibility in one operational workflow.
+### Community observations for more resilient clean-energy services
 
-**This repository starts in local demo mode.** Facility names and reports are fictional; browser changes are stored in that browser only. The system records human observations, not sensor measurements. It does not predict battery failure, control electrical loads, or give instructions about medical equipment. Priority weights are illustrative and unvalidated. The demo has not been piloted in a health facility.
+**IRENA Youth Forum 2027 · Youth Energising the Future: Grids, Storage and Flexibility**
 
-## Local start
+[![Build](https://img.shields.io/badge/build-Vite%20%2B%20TypeScript-477b57)](#run-checks)
+[![Tests](https://img.shields.io/badge/tests-98%20passing-477b57)](#run-checks)
+[![Mode](https://img.shields.io/badge/mode-synthetic%20demo-f0b74b)](#scope-and-safety)
 
-Install Node.js LTS and Git, then open the project folder in VS Code. In **Terminal → New Terminal**, run:
+</div>
 
-```powershell
-cd path\to\resilience-relay
-npm install
-npm run dev
-```
+---
 
-Open the local URL printed by Vite. In local demo mode, check-ins, repair actions, and flexibility logs are kept in `localStorage` on that browser. Use **Reset demo** in the left navigation, account menu, or footer to restore the sample records. The workspace menu lists the fictional sample users; the check-in form lets you select one as the reporter. These are demo identities, not authenticated user accounts.
+Resilience Relay is an early-stage prototype for collecting facility-reported electricity interruptions, backup and storage observations, maintenance follow-up, and staff-confirmed flexibility actions. It brings the Forum’s grids, storage, and flexibility themes into a single demonstration workflow.
 
-Useful commands:
+> **Demo only.** Sample facilities, users, and reports are fictional. The prototype has not been piloted in a health facility. It records observations; it does not use sensors, control electrical loads, predict equipment failure, or provide clinical or engineering instructions.
+
+## Contents
+
+- [What the prototype demonstrates](#what-the-prototype-demonstrates)
+- [Run locally in VS Code](#run-locally-in-vs-code)
+- [Explore the demo](#explore-the-demo)
+- [Telegram bot](#telegram-bot)
+- [Optional hosted demo](#optional-hosted-demo)
+- [Scope and safety](#scope-and-safety)
+- [Project notes](#project-notes)
+- [Final review and GitHub](#final-review-and-github)
+
+## What the prototype demonstrates
+
+- **Grid reliability observations:** daily outage hours, interruption count, longest event, approximate start window, and generator-support hours.
+- **Storage and backup screening:** reported battery and backup status plus editable assumptions for illustrative autonomy and loss-of-load estimates.
+- **Maintenance follow-up:** repair tickets and a two-report healthy-evidence verification cycle.
+- **Flexibility records:** staff-confirmed examples for non-clinical deferrable work, with essential loads explicitly protected.
+- **System insights:** facility comparisons, report-derived indicators, monthly views, locally assigned season comparisons, sensitivity checks, and an exportable district brief.
+- **Low-data reporting concept:** a Telegram check-in flow for fictional facilities, designed for a future hosted deployment.
+
+All scores, thresholds, calculations, and sample values are prototypes. Their definitions and limits are documented in [METHODS.md](METHODS.md). The report-derived availability measure is not SAIDI, SAIFI, or a WHO indicator.
+
+## Run locally in VS Code
+
+### Requirements
+
+- Node.js LTS (npm is included)
+- Git (optional for running, needed for the commit workflow)
+- Visual Studio Code
+
+### Start the web app
+
+1. In VS Code, choose **File → Open Folder…** and open the `resilience-relay` project folder.
+2. Choose **Terminal → New Terminal**.
+3. Install dependencies once:
+
+   ```powershell
+   npm install
+   ```
+
+4. Start the local frontend:
+
+   ```powershell
+   npm run dev
+   ```
+
+5. Open the URL printed in the terminal (usually `http://localhost:5173`). Keep the terminal running while using the app.
+
+The standard Vite command runs **browser-local demo mode**. Check-ins, maintenance actions, flexibility logs, and facility assumptions are saved to that browser’s `localStorage`; they do not reach Supabase or Telegram. Use **Reset demo** to restore the fictional sample records in the current browser.
+
+### Run checks
+
+In a second VS Code terminal, from the project folder:
 
 ```powershell
 npm test
 npm run build
+```
+
+To preview the production build locally after it succeeds:
+
+```powershell
 npm run preview
 ```
 
-## Demo workflow
+## Explore the demo
 
-1. Open **New check-in** and submit a fictional facility report.
-2. A report with a failed battery, failed refrigerator, unavailable backup, or 12+ hours without grid power opens one maintenance ticket for that facility.
-3. In **Maintenance**, mark an open ticket repaired.
-4. Two later reports must meet the prototype healthy rule (grid outage at most 2 hours, battery healthy, backup available, refrigerator healthy). The first increments the evidence count; the second verifies the repair. An unhealthy report resets the count.
-5. In **Flexibility log**, add a staff-confirmed entry, such as rescheduling water pumping while protecting the vaccine refrigerator. This only records the reported action; it never recommends changing clinical equipment use.
-6. Export the facility summary as CSV.
-7. Use the workspace selector to return to all facilities, the notification bell to open the maintenance queue, and the account menu to review demo access or reset sample data. The time-range filter updates overview and report-history summaries.
+1. Select a facility in the workspace menu or view all facilities.
+2. Open **New check-in**, select a fictional reporter, and record sample conditions.
+3. Submit a severe sample condition to see the maintenance queue create a ticket.
+4. Open **Maintenance**, report the repair, then submit two later healthy check-ins to see the verification cycle.
+5. Open **Flexibility log** and add a fictional, staff-confirmed action. The example protects a critical load; the system does not suggest switching medical equipment off.
+6. Open **System insights** to review storage assumptions, report-derived indicators, facility comparisons, and the district brief export.
+7. Try the time range, notification bell, account menu, CSV export, and **Reset demo** controls.
 
-The maintenance view also shows a synthetic verified-repair share, average time from ticket creation to verification, and count of facilities with repeat severe reports. These are prototype workflow indicators, not proof of improved power reliability.
+The sample reporters shown in the app are fictional demo identities. They are not authenticated accounts.
 
-The priority rule is an explainable prototype score: outage exposure (30 points), critical-load observations (25), storage/backup status (20), ticket age plus a remote-site equity adjustment (15), and repeat severe reports (10). The 15-point ticket component includes up to 11 points for ticket age and 4 for the remote flag. The displayed components show the inputs. These weights are not validated by practitioners and must not guide real maintenance or care decisions.
+## Telegram bot
 
-## Engineering insights and evaluation materials
+### What it does
 
-The **System insights** page adds report-derived facility reliability analogues, battery autonomy and loss-of-load screening, model-specific optional fridge holdover, outage time windows, illustrative deferrable-load energy, monthly trend, maintenance verification cycle, weight sensitivity, a battery investment what-if, and a downloadable district Markdown brief. Facility assumptions can be edited from that page. Local mode stores those edits in this browser. See [METHODS.md](METHODS.md) for formulas and limitations, [DATA_DICTIONARY.md](DATA_DICTIONARY.md) for field definitions and [VALIDATION_PLAN.md](VALIDATION_PLAN.md) for the uncompleted practitioner and usability worksheets.
+The Telegram bot is a **hosted-demo integration**, not part of the ordinary local Vite server. A reporter sends `/start` (or `/help`), enters a fictional facility code such as `DEMO-01`, then selects outage duration, approximate outage start, battery status, backup status, and refrigerator observation. The submitted report is saved through the hosted API and appears in the dashboard. Prompts include draft English and Amharic text; a fluent local reviewer should approve translations before any public use.
 
-The report form captures total outage hours, interruption count, longest event, approximate start window, generator-support hours, and a locally assigned rainy/dry/other/unknown season. Season is never inferred from month. A coarse time window only describes the submitted sample and is not a safe operating window. Flexibility insights apply only to non-clinical deferrable tasks; staff decide whether any change is suitable. The Telegram flow includes draft Amharic prompts, which need fluent local review before operational use.
+Commands:
 
-The availability measure uses 24 hours per distinct facility-date with a report. Missing dates are not treated as powered time. Results are facility-level report analogues, not SAIDI/SAIFI or WHO indicators. Sample fixtures remain synthetic and intentionally short; seasonal charts do not establish seasonal patterns.
+| Command | Purpose |
+| --- | --- |
+| `/start` | Explain the demo and ask for a fictional facility code. |
+| `/help` | Show the same safe-use instructions. |
+| `/cancel` | Send a reminder that the command itself saves no report and show how to start again. |
 
-## Optional hosted demo with Supabase and Telegram
+The bot accepts only the seeded `DEMO-01` through `DEMO-06` facility codes. The code is **not authentication**. Do not send real facility, staff, patient, or other confidential information.
 
-The API routes in `api/` are for a synthetic-data demonstration. They are not a production health-facility service. Anyone who can reach the public demo may submit a report for a fictional facility; do not put confidential facility, staff, or patient information in it. Real deployments need authenticated users, facility-level permissions, audit controls, rate limits, and a privacy/security review.
+### Connect a bot to a hosted demo
+
+You need a deployed app with the Vercel API routes, a Supabase database initialized with the demo schema, and a Telegram bot token. The local-only `npm run dev` server cannot receive Telegram webhooks.
+
+1. Deploy the app as described in [Optional hosted demo](#optional-hosted-demo), and verify the dashboard loads from its public deployment URL.
+2. In Telegram, open **@BotFather**, use `/newbot`, follow its prompts, and copy the bot token. Treat it like a password.
+3. Generate a webhook secret containing 1–256 letters, digits, underscores, or hyphens. Keep it private.
+4. In your Vercel project’s **Settings → Environment Variables**, add these **server-side** variables:
+
+   | Variable | Value |
+   | --- | --- |
+   | `TELEGRAM_BOT_TOKEN` | Token from @BotFather |
+   | `TELEGRAM_WEBHOOK_SECRET` | Your generated random secret |
+   | `SUPABASE_URL` | Supabase project URL |
+   | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service-role key |
+
+   Keep `SUPABASE_SERVICE_ROLE_KEY` and both Telegram values server-side. Never add a `VITE_` prefix, commit them, or send them in a screenshot or chat.
+5. Redeploy so the server functions receive the new environment variables.
+6. On your computer, create a private `.env.local` in the project folder. Copy the variable names from `.env.example`, then fill in the bot token, the **same** webhook secret, and `APP_URL` with the deployed HTTPS URL. Do not include quotation marks unless they are part of the value. `.env.local` is ignored by Git.
+7. In VS Code’s terminal, install Vercel CLI if needed and authenticate:
+
+   ```powershell
+   npm install --global vercel
+   vercel login
+   ```
+
+8. From the project directory, link this folder to the Vercel project if it is not already linked, then configure the local environment by pulling Vercel settings if you prefer. Ensure `.env.local` has the private Telegram values before continuing.
+9. Set the webhook using the helper script:
+
+   ```powershell
+   node --env-file=.env.local scripts/set-webhook.mjs
+   ```
+
+   The script sends the token directly from your terminal to Telegram’s `setWebhook` API and prints a success message. Never paste a tokenized Telegram API URL into a browser.
+10. Open your bot in Telegram, send `/start`, enter `DEMO-01`, and complete all five selections. Confirm that the resulting Telegram report appears in the hosted dashboard.
+
+If webhook setup fails, check that `APP_URL` is the deployed HTTPS origin, the API deployment is current, the two Telegram environment values match, and `/api/telegram` is reachable. If updates reach the bot but do not appear in the dashboard, check the Vercel function logs and Supabase schema setup. Do not share secrets when asking for help.
+
+### Telegram limitations
+
+- It requires internet connectivity; it is not an offline or SMS workflow.
+- It uses a demo facility code, not verified identity or facility authorization.
+- Telegram callback buttons are an interaction convenience, not an access-control mechanism. `/cancel` is a reminder; it does not revoke buttons already delivered in Telegram.
+- The flow records a refrigerator observation; it never gives equipment-handling advice.
+- The Amharic copy is a draft and needs fluent review.
+
+## Optional hosted demo
+
+The hosted setup is optional. Use synthetic data only.
 
 ### Supabase
 
 1. Create a Supabase project.
-2. In its SQL Editor, run `supabase/schema.sql`. It seeds fictional facilities, reports, and sample reporter identities, and gives anonymous browser roles read-only access; direct browser writes are revoked. Writes go through server functions using a server-only service-role key.
-3. To clear the hosted prototype's synthetic activity, run `supabase/reset_demo_data.sql`, then rerun `supabase/schema.sql` to restore the sample rows. This deletes all reports, tickets, and flexibility actions in this demo database. Do not use this schema or reset script for a real deployment.
-3. Copy the project URL and service-role key into the hosting provider's server environment variables. Never use a `VITE_` prefix for the service-role key.
+2. In its SQL Editor, run [`supabase/schema.sql`](supabase/schema.sql). The schema creates row-level security policies and seeds fictional facilities, reports, and demo identities. Browser roles can read synthetic demo data; writes go through server functions.
+3. Store the Supabase project URL and service-role key in the hosting provider’s server environment. Never place the service-role key in frontend variables.
+
+To restore sample data in the demo database, run [`supabase/reset_demo_data.sql`](supabase/reset_demo_data.sql), then rerun `supabase/schema.sql`. **This deletes all report, ticket, and flexibility activity in that demo database.** Do not use these scripts on a real database.
 
 ### Vercel
 
-1. Push this repository to your GitHub account and import it in Vercel.
-2. Add `VITE_REMOTE_MODE=true` as a build environment variable.
-3. Add server-only `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
-4. Deploy. Confirm that `/api/state` returns only the synthetic records and the dashboard loads. Public form writes are validated by `/api/reports`, `/api/repair`, and `/api/flex`.
+1. Push the repository to your GitHub account only after your local review, then import that repository into Vercel.
+2. Set `VITE_REMOTE_MODE=true` as a build environment variable.
+3. Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` as server environment variables.
+4. Deploy and open the deployed app. Confirm `/api/state` responds and the dashboard loads the synthetic records.
+5. Follow [Connect a bot to a hosted demo](#connect-a-bot-to-a-hosted-demo) if you also want Telegram reporting.
 
-For local serverless development, use Vercel CLI and a private `.env.local` copied from `.env.example`, then run `vercel dev`. Keep `.env.local` untracked. The ordinary `npm run dev` command is intentionally a frontend-only, browser-local demo.
+For local testing of serverless routes, use Vercel CLI (`vercel dev`) and a private `.env.local`. The regular `npm run dev` command is intentionally frontend-only.
 
-### Telegram
+## Scope and safety
 
-1. Create the bot with Telegram's `@BotFather` and save the token only as a Vercel server environment variable named `TELEGRAM_BOT_TOKEN`.
-2. Generate a long random webhook secret using letters, numbers, `_`, or `-`; save it as `TELEGRAM_WEBHOOK_SECRET` in Vercel.
-3. Add both variables and redeploy so the function receives them.
-4. In a private local `.env.local`, set `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, and `APP_URL` to the deployed app URL. Run `node scripts/set-webhook.mjs`. The script sends the token to Telegram directly; do not paste a tokenized Bot API URL into a browser, chat, screenshot, or repository.
-5. Open the bot and send `/start`, then `DEMO-01`. Complete the prompts and confirm the entry appears in the dashboard.
+- No real facility, staff, or patient data; use synthetic information only.
+- No sensors, utility-grid integration, clinical recommendations, load control, or maintenance dispatch.
+- Storage autonomy and loss-of-load values are illustrative screening calculations, not equipment guarantees.
+- Model-specific refrigerator holdover is unknown unless a verified value is entered for the exact equipment model.
+- The priority score and thresholds are unvalidated prototype choices; they must not guide real care or maintenance decisions.
+- Reported observations may be incomplete or inaccurate. Missing dates are not treated as powered time.
+- Hosted write throttling is basic abuse reduction, not authentication or authorization.
+- Any real-world pilot requires practitioner validation, user and facility authorization, privacy/security review, and locally reviewed translations.
 
-The bot endpoint rejects updates without Telegram's webhook secret header. Facility codes alone are not authentication; this bot accepts only fictional demo facilities and is not suitable for real reports without a user authorization and enrollment flow.
+See [METHODS.md](METHODS.md), [DATA_DICTIONARY.md](DATA_DICTIONARY.md), and [VALIDATION_PLAN.md](VALIDATION_PLAN.md) for definitions, formulas, data fields, and blank evaluation worksheets.
 
-## Security and limitations
-
-- Supabase tables enable row-level security. Anonymous and authenticated browser roles can select the synthetic demo rows but have no direct write grants. Server functions use the service-role key only after input validation.
-- Hosted demo writes are throttled to 20 requests per client IP per hour after the latest SQL schema (client IP is stored only as a SHA-256 digest). This is basic abuse reduction, not authentication or access control; hosted instances must still use synthetic information only.
-- Telegram check-ins require connectivity. The bot is low-data, not offline.
-- Facility and staff observations may be incomplete or inaccurate; the prototype has no sensors or utility-grid integration.
-- A facility code is not proof that a reporter is authorized. Add real authentication and facility assignment before any operational use.
-- Health thresholds, urgency weights, and duplicate-ticket rules are prototype choices. Validate scenarios and thresholds with health and energy practitioners before proposing operational use.
-- CSV and Markdown summaries can show what the demo recorded; they do not prove improved electricity reliability or health outcomes.
-
-## Project structure
+## Project notes
 
 ```text
-src/                  React dashboard, local demo interactions, scoring and verification model
-src/lib/engineering.ts Indicative reliability, storage, maintenance and finance calculations
-src/components/       Dashboard feature views
-api/                  Vercel server functions for demo database and Telegram writes
-supabase/schema.sql   RLS-enabled synthetic schema, migration columns, seed rows and write throttling
-scripts/              Secure Telegram webhook setup helper
-METHODS.md             Formulae, standards context, assumptions and limitations
-DATA_DICTIONARY.md     Field definitions and WHO alignment note
-VALIDATION_PLAN.md     Eight fictional cases and blank evaluation worksheets
+src/                    React dashboard, local demo interactions, model and UI
+src/lib/engineering.ts  Reliability, storage, maintenance and finance calculations
+src/components/         Dashboard feature views
+api/                    Vercel server functions, including Telegram webhook
+supabase/                Demo schema, synthetic seed data and reset script
+scripts/                 Telegram webhook setup helper
+tests/                   Model, validation, storage and engineering test suites
+METHODS.md                Methods, assumptions and limitations
+DATA_DICTIONARY.md        Field definitions
+VALIDATION_PLAN.md        Fictional scenarios and blank evaluation worksheets
 ```
+
+## Final review and GitHub
+
+Before the first push, open the `resilience-relay` folder in VS Code, run the app, inspect the navigation and workflows listed in [Explore the demo](#explore-the-demo), then run `npm test` and `npm run build`. Review **Source Control** and confirm `.env.local`, deployment credentials, and real personal data are not staged.
+
+The local development history is organized into focused commits. When you decide the review is complete, publish the repository to your GitHub account. Do not push secrets or real user data. This prototype has not been independently security-reviewed or field-validated.
