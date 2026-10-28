@@ -6,6 +6,8 @@
 
 ### Community observations for more resilient clean-energy services
 
+> **Live demo:** Not deployed yet. Only add the public GitHub Pages URL here after the first deployment succeeds and the demo has been checked end to end.
+
 [![Build](https://img.shields.io/badge/build-Vite%20%2B%20TypeScript-477b57)](#run-checks)
 [![Tests](https://img.shields.io/badge/tests-98%20passing-477b57)](#run-checks)
 [![Mode](https://img.shields.io/badge/mode-synthetic%20demo-f0b74b)](#scope-and-safety)
@@ -14,20 +16,26 @@
 
 ---
 
-Resilience Relay is an early-stage prototype for collecting facility-reported electricity interruptions, backup and storage observations, maintenance follow-up, and staff-confirmed flexibility actions. It brings the Forum’s grids, storage, and flexibility themes into a single demonstration workflow.
+Resilience Relay is an early-stage prototype for collecting facility-reported electricity interruptions, backup and storage observations, maintenance follow-up, and staff-confirmed flexibility actions. It brings grids, storage, and flexibility into one demonstration workflow.
+
+## Why this matters
+
+A 2023 joint report by WHO, the World Bank, IRENA, and Sustainable Energy for All (SEforALL) reported that power is unreliable for about half of health facilities in sub-Saharan Africa; close to one billion people in low- and lower-middle-income countries are served by facilities with unreliable or no electricity. WHO identifies more systematic monitoring of health-facility energy access as a key action. Resilience Relay explores that monitoring problem with synthetic, facility-level observations; it is not a WHO indicator or a validated monitoring system. [WHO joint report announcement](https://www.who.int/news/item/14-01-2023-close-to-one-billion-people-globally-are-served-by-health-care-facilities-with-no-electricity-access-or-with-unreliable-electricity) · [WHO strategies](https://www.who.int/teams/environment-climate-change-and-health/air-quality-energy-and-health/sectoral-interventions/health-care-facility-electrification/strategies)
 
 > **Demo only.** Sample facilities, users, and reports are fictional. The prototype has not been piloted in a health facility. It records observations; it does not use sensors, control electrical loads, predict equipment failure, or provide clinical or engineering instructions.
 
 ## Contents
 
 - [What the prototype demonstrates](#what-the-prototype-demonstrates)
+- [Theme mapping](#theme-mapping)
 - [Run locally in VS Code](#run-locally-in-vs-code)
 - [Explore the demo](#explore-the-demo)
 - [Telegram bot](#telegram-bot)
-- [Optional hosted demo](#optional-hosted-demo)
+- [Deployment options](#deployment-options)
 - [Scope and safety](#scope-and-safety)
+- [Roadmap](#roadmap)
+- [License](#license)
 - [Project notes](#project-notes)
-- [Final review and GitHub](#final-review-and-github)
 
 ## What the prototype demonstrates
 
@@ -44,7 +52,7 @@ All scores, thresholds, calculations, and sample values are prototypes. Their de
 
 ### Requirements
 
-- Node.js LTS (npm is included)
+- Node.js **20.6 or newer** (npm is included; Telegram webhook setup uses Node’s `--env-file` flag)
 - Git (optional for running, needed for the commit workflow)
 - Visual Studio Code
 
@@ -95,11 +103,22 @@ npm run preview
 
 The sample reporters shown in the app are fictional demo identities. They are not authenticated accounts.
 
+## Theme mapping
+
+| IRENA theme | Where it appears in the prototype |
+| --- | --- |
+| Grids | Reported interruption count, outage hours, and facility-level availability analogue |
+| Storage | Battery autonomy and loss-of-load screening estimates |
+| Flexibility | Staff-confirmed deferrable-load log and descriptive outage-timing windows |
+| Finance and policy | Illustrative cost per avoided kWh and downloadable district brief |
+
+The measures are prototypes based on entered assumptions and synthetic or self-reported data. They do not model a power system, establish safe operating windows, or constitute investment advice.
+
 ## Telegram bot
 
 ### What it does
 
-The Telegram bot is a **hosted-demo integration**, not part of the ordinary local Vite server. A reporter sends `/start` (or `/help`), enters a fictional facility code such as `DEMO-01`, then selects outage duration, approximate outage start, battery status, backup status, and refrigerator observation. The submitted report is saved through the hosted API and appears in the dashboard. Prompts include draft English and Amharic text; a fluent local reviewer should approve translations before any public use.
+The Telegram bot is a **hosted-demo integration**, not part of the ordinary local Vite server. A reporter sends `/start` (or `/help`), enters a fictional facility code such as `DEMO-01`, then selects outage duration, approximate outage start, battery status, backup status, and refrigerator observation. The submitted report is saved through the hosted API and appears in the dashboard. Prompts include English and Amharic text. The Amharic prompts have been reviewed by the project author for this demo; usability and local terminology still need validation before operational use.
 
 Commands:
 
@@ -115,7 +134,7 @@ The bot accepts only the seeded `DEMO-01` through `DEMO-06` facility codes. The 
 
 You need a deployed app with the Vercel API routes, a Supabase database initialized with the demo schema, and a Telegram bot token. The local-only `npm run dev` server cannot receive Telegram webhooks.
 
-1. Deploy the app as described in [Optional hosted demo](#optional-hosted-demo), and verify the dashboard loads from its public deployment URL.
+1. Deploy the separate serverless copy as described in [Separate hosted demo for Telegram testing](#separate-hosted-demo-for-telegram-testing), and verify the dashboard loads from its deployment URL.
 2. In Telegram, open **@BotFather**, use `/newbot`, follow its prompts, and copy the bot token. Treat it like a password.
 3. Generate a webhook secret containing 1–256 letters, digits, underscores, or hyphens. Keep it private.
 4. In your Vercel project’s **Settings → Environment Variables**, add these **server-side** variables:
@@ -147,21 +166,35 @@ If webhook setup fails, check that `APP_URL` is the deployed HTTPS origin, the A
 - It uses a demo facility code, not verified identity or facility authorization.
 - Telegram callback buttons are an interaction convenience, not an access-control mechanism. `/cancel` is a reminder; it does not revoke buttons already delivered in Telegram.
 - The flow records a refrigerator observation; it never gives equipment-handling advice.
-- The Amharic copy is a draft and needs fluent review.
+- Amharic prompt wording was reviewed by the project author for the demo and still needs local usability validation.
 
-## Optional hosted demo
+## Deployment options
 
-The hosted setup is optional. Use synthetic data only.
+### Public reviewer demo: static and browser-local
+
+The recommended public demo uses the [GitHub Pages workflow](.github/workflows/pages.yml). It uploads only `dist/` after the tests and build pass; the `api/` server functions and Supabase are not deployed. The frontend stays in browser-local mode because `VITE_REMOTE_MODE` is unset. Each reviewer’s changes remain in that browser.
+
+1. Push the finished repository to GitHub.
+2. In the repository, open **Settings → Pages** and set **Build and deployment → Source** to **GitHub Actions**.
+3. Ensure `main` is the default branch. The workflow runs after the first push to `main`; it can also be run from **Actions → Deploy static reviewer demo → Run workflow**.
+4. Wait for the workflow to pass. Copy the published URL shown in **Settings → Pages** and replace the “Not deployed yet” notice above with a link.
+5. Open the public site in a private/incognito window, confirm sample screens load, submit a fictional check-in, and verify changes remain in that browser. Do not set `VITE_REMOTE_MODE=true` for this public copy.
+
+The repository’s `api/` folder is intentionally excluded from this deployment artifact, so the public review site has no shared API write endpoint.
+
+### Separate hosted demo for Telegram testing
+
+Use a separate Vercel deployment when testing Telegram with Supabase. This copy exposes unauthenticated demo API writes with basic throttling and is only for synthetic data. Do not use it as the main public application link. If there is only one deployment, reset its demo records before recording a video or submitting it.
 
 ### Supabase
 
 1. Create a Supabase project.
 2. In its SQL Editor, run [`supabase/schema.sql`](supabase/schema.sql). The schema creates row-level security policies and seeds fictional facilities, reports, and demo identities. Browser roles can read synthetic demo data; writes go through server functions.
-3. Store the Supabase project URL and service-role key in the hosting provider’s server environment. Never place the service-role key in frontend variables.
+3. Store the Supabase project URL and service-role key in the Vercel project’s server environment. Never place the service-role key in frontend variables.
 
 To restore sample data in the demo database, run [`supabase/reset_demo_data.sql`](supabase/reset_demo_data.sql), then rerun `supabase/schema.sql`. **This deletes all report, ticket, and flexibility activity in that demo database.** Do not use these scripts on a real database.
 
-### Vercel
+### Vercel API deployment
 
 1. Push the repository to your GitHub account only after your local review, then import that repository into Vercel.
 2. Set `VITE_REMOTE_MODE=true` as a build environment variable.
@@ -169,7 +202,9 @@ To restore sample data in the demo database, run [`supabase/reset_demo_data.sql`
 4. Deploy and open the deployed app. Confirm `/api/state` responds and the dashboard loads the synthetic records.
 5. Follow [Connect a bot to a hosted demo](#connect-a-bot-to-a-hosted-demo) if you also want Telegram reporting.
 
-For local testing of serverless routes, use Vercel CLI (`vercel dev`) and a private `.env.local`. The regular `npm run dev` command is intentionally frontend-only.
+For local testing of serverless routes, use Vercel CLI (`vercel dev`) and a private `.env.local`. The regular `npm run dev` command is intentionally frontend-only. Even if `VITE_REMOTE_MODE` is false, deploying the repository root to Vercel publishes its `/api` functions; use the static Pages workflow for the public reviewer URL.
+
+Keep the first Telegram setup attempt to **90 minutes**. If it is not working by then, stop and describe the bot as **implemented, not yet deployed**. Do not call it live until a full Telegram-to-dashboard check-in has succeeded.
 
 ## Scope and safety
 
@@ -183,6 +218,17 @@ For local testing of serverless routes, use Vercel CLI (`vercel dev`) and a priv
 - Any real-world pilot requires practitioner validation, user and facility authorization, privacy/security review, and locally reviewed translations.
 
 See [METHODS.md](METHODS.md), [DATA_DICTIONARY.md](DATA_DICTIONARY.md), and [VALIDATION_PLAN.md](VALIDATION_PLAN.md) for definitions, formulas, data fields, and blank evaluation worksheets.
+
+## Roadmap
+
+1. **Practitioner validation:** review the fictional scenarios, score weights, and reporting workflow with local health and energy practitioners; publish findings only after sessions are completed.
+2. **Real authentication and access:** add verified identities, facility assignment, role-based permissions, audit logging, and abuse monitoring before accepting real reports.
+3. **SMS or offline reporting:** explore offline-first capture with queued, conflict-safe synchronization; Telegram currently requires internet access.
+4. **Language and usability:** test the author-reviewed Amharic prompts with intended users and revise them based on comprehension and usability feedback.
+
+## License
+
+This project is distributed under the [MIT License](LICENSE).
 
 ## Project notes
 
@@ -198,9 +244,3 @@ METHODS.md                Methods, assumptions and limitations
 DATA_DICTIONARY.md        Field definitions
 VALIDATION_PLAN.md        Fictional scenarios and blank evaluation worksheets
 ```
-
-## Final review and GitHub
-
-Before the first push, open the `resilience-relay` folder in VS Code, run the app, inspect the navigation and workflows listed in [Explore the demo](#explore-the-demo), then run `npm test` and `npm run build`. Review **Source Control** and confirm `.env.local`, deployment credentials, and real personal data are not staged.
-
-The local development history is organized into focused commits. When you decide the review is complete, publish the repository to your GitHub account. Do not push secrets or real user data. This prototype has not been independently security-reviewed or field-validated.
