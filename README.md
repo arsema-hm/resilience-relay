@@ -244,3 +244,12 @@ METHODS.md                Methods, assumptions and limitations
 DATA_DICTIONARY.md        Field definitions
 VALIDATION_PLAN.md        Fictional scenarios and blank evaluation worksheets
 ```
+## Screenshots
+
+Screenshots show synthetic demo data only.
+
+![Overview dashboard with synthetic demo data](public/screenshots/overview.jpg)
+
+![System insights view with storage and reliability indicators](public/screenshots/system-insights.jpg)
+
+![Flexibility log with staff-confirmed non-clinical entries](public/screenshots/flexibility-log.jpg)
