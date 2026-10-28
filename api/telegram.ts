@@ -27,8 +27,17 @@ export default async function handler(req: any, res: any) {
 async function onText(message: any) {
   const chat = message.chat.id as number
   const text = String(message.text).trim()
-  if (text.startsWith('/')) {
+  const command = text.split(/\s+/, 1)[0].split('@', 1)[0].toLowerCase()
+  if (command === '/start' || command === '/help') {
     await sendText(chat, 'Resilience Relay demo · የሙከራ ቦት። Send a fictional facility code such as DEMO-01 to record an observed grid and backup check-in. ለምሳሌ DEMO-01 ይላኩ። Do not send patient details · የታካሚ መረጃ አይላኩ።')
+    return
+  }
+  if (command === '/cancel') {
+    await sendText(chat, 'No report was saved by this command. To begin a new demo check-in, send DEMO-01 through DEMO-06. · ሪፖርት አልተመዘገበም። እንደገና ለመጀመር የሙከራ ኮድ ይላኩ።')
+    return
+  }
+  if (text.startsWith('/')) {
+    await sendText(chat, 'Unknown command. Send /start for instructions or /cancel to stop. · ለመጀመር /start ይላኩ።')
     return
   }
   const code = text.toUpperCase()
@@ -38,7 +47,7 @@ async function onText(message: any) {
   if (!facility) { await sendText(chat, 'That demo code was not found. Try DEMO-01 through DEMO-06.'); return }
   await sendText(chat, `${facility.name} (${facility.code})\n1 of 5 · 1 ከ 5\nHow many hours was grid power off today? · ዛሬ የኤሌክትሪክ መቋረጥ ስንት ሰዓት ነበር?`, keyboard([
     [{ text: '0 h', callback_data: `h|${facility.id}|0` }, { text: '2 h', callback_data: `h|${facility.id}|2` }, { text: '6 h', callback_data: `h|${facility.id}|6` }],
-    [{ text: '12 h', callback_data: `h|${facility.id}|12` }, { text: '18 h+', callback_data: `h|${facility.id}|18` }],
+    [{ text: '12 h', callback_data: `h|${facility.id}|12` }, { text: '18 h', callback_data: `h|${facility.id}|18` }, { text: '24 h', callback_data: `h|${facility.id}|24` }],
   ]))
 }
 
@@ -50,19 +59,19 @@ async function onButton(query: any) {
   const facility = await admin().from('facilities').select('id,name').eq('id', facilityId).maybeSingle()
   if (facility.error) throw facility.error
   if (!facility.data) { await sendText(chat, 'That demo facility is no longer available. Start again with its DEMO code.'); return }
-  if (step === 'h' && parts.length === 3 && ['0', '2', '6', '12', '18'].includes(hours)) {
+  if (step === 'h' && parts.length === 3 && ['0', '2', '6', '12', '18', '24'].includes(hours)) {
     await sendText(chat, '2 of 5 · 2 ከ 5\nWhen did the outage start? · መቋረጡ መቼ ጀመረ?', keyboard([[{ text: 'Morning · ጠዋት', callback_data: `w|${facilityId}|${hours}|morning` }, { text: 'Afternoon · ከሰዓት', callback_data: `w|${facilityId}|${hours}|afternoon` }], [{ text: 'Evening · ምሽት', callback_data: `w|${facilityId}|${hours}|evening` }, { text: 'Night · ሌሊት', callback_data: `w|${facilityId}|${hours}|night` }], [{ text: 'Unknown · አላውቅም', callback_data: `w|${facilityId}|${hours}|unknown` }]])); return
   }
-  if (step === 'w' && parts.length === 4 && ['0','2','6','12','18'].includes(hours) && ['morning','afternoon','evening','night','unknown'].includes(window)) {
+  if (step === 'w' && parts.length === 4 && ['0','2','6','12','18','24'].includes(hours) && ['morning','afternoon','evening','night','unknown'].includes(window)) {
     await sendText(chat, '3 of 5 · 3 ከ 5\nObserved battery status? · የባትሪው ሁኔታ?', keyboard([[{ text: 'Healthy · ጥሩ', callback_data: `b|${facilityId}|${hours}|${window}|healthy` }, { text: 'Low · ዝቅተኛ', callback_data: `b|${facilityId}|${hours}|${window}|low` }, { text: 'Failed · ተበላሽቷል', callback_data: `b|${facilityId}|${hours}|${window}|failed` }]])); return
   }
-  if (step === 'b' && parts.length === 5 && ['healthy','low','failed'].includes(battery)) {
+  if (step === 'b' && parts.length === 5 && ['0','2','6','12','18','24'].includes(hours) && ['morning','afternoon','evening','night','unknown'].includes(window) && ['healthy','low','failed'].includes(battery)) {
     await sendText(chat, '4 of 5 · 4 ከ 5\nBackup supply status? · የመጠባበቂያ ኃይል ሁኔታ?', keyboard([[{ text: 'Available · አለ', callback_data: `u|${facilityId}|${hours}|${window}|${battery}|available` }, { text: 'Limited · ውስን', callback_data: `u|${facilityId}|${hours}|${window}|${battery}|limited` }, { text: 'Unavailable · የለም', callback_data: `u|${facilityId}|${hours}|${window}|${battery}|unavailable` }]])); return
   }
-  if (step === 'u' && parts.length === 6 && ['healthy','low','failed'].includes(battery) && ['available','limited','unavailable'].includes(backup)) {
+  if (step === 'u' && parts.length === 6 && ['0','2','6','12','18','24'].includes(hours) && ['morning','afternoon','evening','night','unknown'].includes(window) && ['healthy','low','failed'].includes(battery) && ['available','limited','unavailable'].includes(backup)) {
     await sendText(chat, '5 of 5 · 5 ከ 5\nVaccine refrigerator observation? · የክትባት ማቀዝቀዣ ሁኔታ?', keyboard([[{ text: 'Healthy · ጥሩ', callback_data: `r|${facilityId}|${hours}|${window}|${battery}|${backup}|healthy` }, { text: 'At risk · አደጋ ላይ', callback_data: `r|${facilityId}|${hours}|${window}|${battery}|${backup}|at_risk` }, { text: 'Failed · ተበላሽቷል', callback_data: `r|${facilityId}|${hours}|${window}|${battery}|${backup}|failed` }]])); return
   }
-  if (step === 'r' && parts.length === 7 && ['healthy','low','failed'].includes(battery) && ['available','limited','unavailable'].includes(backup) && ['healthy','at_risk','failed'].includes(fridge)) {
+  if (step === 'r' && parts.length === 7 && ['0','2','6','12','18','24'].includes(hours) && ['morning','afternoon','evening','night','unknown'].includes(window) && ['healthy','low','failed'].includes(battery) && ['available','limited','unavailable'].includes(backup) && ['healthy','at_risk','failed'].includes(fridge)) {
     const hoursNumber = Number(hours)
     if (!Number.isFinite(hoursNumber) || hoursNumber < 0 || hoursNumber > 24) return
     await saveReport(chat, facility.data, hoursNumber, window, battery, backup, fridge); return
